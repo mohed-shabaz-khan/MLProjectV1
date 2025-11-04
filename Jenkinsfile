@@ -6,8 +6,8 @@ pipeline {
         ECR_REPO = '428409803345.dkr.ecr.ap-south-1.amazonaws.com/ml-date-classifier'
         IMAGE_TAG = "latest"
         EC2_HOST = 'ubuntu@13.127.182.23'
-        PEM_KEY = '/var/lib/jenkins/jenkins-key.pem' // Path to your EC2 key
-        APP_PORT = '5000'
+        PEM_KEY = '/var/lib/jenkins/jenkins-key.pem'  // Path to EC2 key
+        APP_PORT = '8080'                             // Updated from 5000 → 8080
     }
 
     stages {
@@ -51,12 +51,15 @@ pipeline {
                         set -e
                         echo '🛑 Stopping old container...'
                         docker rm -f ml-date-classifier || true
+
                         echo '🧹 Cleaning up old image...'
                         docker rmi $ECR_REPO:$IMAGE_TAG || true
+
                         echo '📥 Pulling new image from ECR...'
                         aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
                         docker pull $ECR_REPO:$IMAGE_TAG
-                        echo '🏃‍♂️ Running new container...'
+
+                        echo '🏃‍♂️ Running new container on port $APP_PORT...'
                         docker run -d -p $APP_PORT:$APP_PORT --name ml-date-classifier $ECR_REPO:$IMAGE_TAG
                     "
                 '''
@@ -67,11 +70,12 @@ pipeline {
             steps {
                 echo '🩺 Verifying if application is live...'
                 script {
-                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://13.127.182.23:5000", returnStdout: true).trim()
+                    // Updated to use port 8080 and /health endpoint
+                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://13.127.182.23:8080/health", returnStdout: true).trim()
                     if (response != '200') {
                         error("❌ Health check failed! App returned HTTP ${response}")
                     } else {
-                        echo "✅ Health check passed — App is running successfully."
+                        echo "✅ Health check passed — App is running successfully on port 8080."
                     }
                 }
             }
