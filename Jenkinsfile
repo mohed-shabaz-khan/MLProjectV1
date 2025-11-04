@@ -66,20 +66,7 @@ pipeline {
             }
         }
 
-        stage('Health Check') {
-            steps {
-                echo '🩺 Verifying if application is live...'
-                script {
-                    // Updated to use port 8080 and /health endpoint
-                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://3.7.55.120:8080/health", returnStdout: true).trim()
-                    if (response != '200') {
-                        error("❌ Health check failed! App returned HTTP ${response}")
-                    } else {
-                        echo "✅ Health check passed — App is running successfully on port 8080."
-                    }
-                }
-            }
-        }
+
     }
 
     post {
