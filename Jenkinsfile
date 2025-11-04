@@ -5,7 +5,7 @@ pipeline {
         AWS_REGION = 'ap-south-1'
         ECR_REPO = '428409803345.dkr.ecr.ap-south-1.amazonaws.com/ml-date-classifier'
         IMAGE_TAG = "latest"
-        EC2_HOST = 'ubuntu@13.127.182.23'
+        EC2_HOST = 'ubuntu@3.7.55.120'
         PEM_KEY = '/var/lib/jenkins/jenkins-key.pem'  // Path to EC2 key
         APP_PORT = '8080'                             // Updated from 5000 → 8080
     }
@@ -71,7 +71,7 @@ pipeline {
                 echo '🩺 Verifying if application is live...'
                 script {
                     // Updated to use port 8080 and /health endpoint
-                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://13.127.182.23:8080/health", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://3.7.55.120:8080/health", returnStdout: true).trim()
                     if (response != '200') {
                         error("❌ Health check failed! App returned HTTP ${response}")
                     } else {

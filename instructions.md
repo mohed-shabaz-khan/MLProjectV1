@@ -1,5 +1,5 @@
 ssh -i "~/jenkins-key.pem" ubuntu@13.127.182.23
-
+ssh -i "~/jenkins-key.pem" ubuntu@3.7.55.120
 
 ubuntu@ip-172-31-7-88:~$ sudo systemctl restart jenkins
 ubuntu@ip-172-31-7-88:~$ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
