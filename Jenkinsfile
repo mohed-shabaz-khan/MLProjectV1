@@ -6,8 +6,8 @@ pipeline {
         AWS_REGION = 'ap-south-1'                 // AWS region
         ECR_REPO_NAME = 'ml-date-classifier'      // ECR repository name
         IMAGE_TAG = "latest"                      // Docker image tag
-        EC2_USER = 'ubuntu'                       // EC2 username (use 'ec2-user' if Amazon Linux)
-        EC2_IP = '13.127.182.23'                  // EC2 instance Public IP
+        EC2_USER = 'ubuntu'                       // EC2 username (use 'ec2-user' for Amazon Linux)
+        EC2_IP = '13.127.182.23'                  // EC2 public IP
     }
 
     stages {
@@ -31,7 +31,7 @@ pipeline {
             }
         }
 
-        // STEP 3️⃣: Login to AWS ECR securely
+        // STEP 3️⃣: Login to AWS ECR
         stage('Login to AWS ECR') {
             steps {
                 echo "🔑 Logging in to AWS ECR..."
@@ -55,7 +55,7 @@ pipeline {
             }
         }
 
-        // STEP 4️⃣: Tag & Push image to ECR
+        // STEP 4️⃣: Tag and Push image to ECR
         stage('Tag & Push Image to ECR') {
             steps {
                 echo "🚀 Tagging and pushing Docker image to ECR..."
@@ -69,29 +69,29 @@ pipeline {
             }
         }
 
-        // STEP 5️⃣: Deploy on EC2
+        // STEP 5️⃣: Deploy to EC2 (Fixed for variable expansion)
         stage('Deploy on EC2') {
             steps {
                 echo "🚀 Deploying Docker container on EC2..."
                 sshagent(['ec2-ssh-key']) {
-                    sh '''
+                    sh """
                     set -e
-                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} '
+                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
                     set -e
-                    echo "📥 Pulling latest Docker image from ECR..."
+                    echo '📥 Pulling latest Docker image from ECR...'
                     sudo docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
 
-                    echo "🧹 Cleaning up old container (if any)..."
+                    echo '🧹 Cleaning up old container (if any)...'
                     sudo docker stop ml_app || true
                     sudo docker rm ml_app || true
 
-                    echo "🚀 Starting new container..."
+                    echo '🚀 Starting new container...'
                     sudo docker run -d -p 5000:5000 --name ml_app \
                     ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
 
-                    echo "✅ Deployment successful on EC2!"
-                    '
-                    '''
+                    echo '✅ Deployment successful on EC2!'
+                    "
+                    """
                 }
             }
         }
