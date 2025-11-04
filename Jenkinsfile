@@ -31,7 +31,7 @@ pipeline {
             }
         }
 
-        // STEP 3️⃣: Login to AWS ECR
+        // STEP 3️⃣: Login to AWS ECR (from Jenkins)
         stage('Login to AWS ECR') {
             steps {
                 echo "🔑 Logging in to AWS ECR..."
@@ -69,7 +69,7 @@ pipeline {
             }
         }
 
-        // STEP 5️⃣: Deploy to EC2 (Fixed for variable expansion)
+        // STEP 5️⃣: Deploy on EC2 (with AWS ECR login inside EC2)
         stage('Deploy on EC2') {
             steps {
                 echo "🚀 Deploying Docker container on EC2..."
@@ -78,6 +78,11 @@ pipeline {
                     set -e
                     ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
                     set -e
+                    echo '🔐 Logging in to AWS ECR on EC2...'
+                    aws ecr get-login-password --region ${AWS_REGION} | \
+                    sudo docker login --username AWS --password-stdin \
+                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
                     echo '📥 Pulling latest Docker image from ECR...'
                     sudo docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
 
