@@ -25,7 +25,7 @@ USER appuser
 ENV APP_MODULE=ml_date_classifier.infer:app
 ENV PORT=8080
 
-# 8️⃣ Expose the application port (FastAPI default)
+# 8️⃣ Expose the FastAPI application port
 EXPOSE 8080
 
 # 9️⃣ Start the FastAPI application with Uvicorn
@@ -33,9 +33,8 @@ CMD ["uvicorn", "ml_date_classifier.infer:app", "--host", "0.0.0.0", "--port", "
 
 # ---------------------------------------------------------
 # ✅ Notes:
-# - Keeps image lightweight using python:3.10-slim
-# - Uses non-root user for security
-# - Caches dependencies to speed up rebuilds
+# - Uses python:3.10-slim for lightweight image
+# - Runs as non-root user for better security
 # - Exposes port 8080 (matches app + Jenkinsfile)
-# - Fully compatible with AWS ECR + EC2 deployment
+# - Ideal for AWS ECR → EC2 deployment via Jenkins
 # ---------------------------------------------------------
