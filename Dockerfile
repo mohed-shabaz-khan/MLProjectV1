@@ -1,18 +1,41 @@
-# Use a lightweight Python base image
+# ---------------------------------------------------------
+# 📦 MLProjectV1 - FastAPI Dockerfile (Production Ready)
+# ---------------------------------------------------------
+
+# 1️⃣ Use a lightweight Python base image
 FROM python:3.10-slim
 
-# Set the working directory
+# 2️⃣ Set working directory inside container
 WORKDIR /app
 
-# Copy dependency list and install
+# 3️⃣ Copy dependency list first (for Docker layer caching)
 COPY requirements.txt .
+
+# 4️⃣ Install dependencies efficiently
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all source code into the image
+# 5️⃣ Copy all source code into the container
 COPY . .
 
-# Expose port 8080 for FastAPI
+# 6️⃣ Security best practice: create a non-root user
+RUN adduser --disabled-password appuser
+USER appuser
+
+# 7️⃣ Define environment variables for flexibility
+ENV APP_MODULE=ml_date_classifier.infer:app
+ENV PORT=8080
+
+# 8️⃣ Expose the application port (FastAPI default)
 EXPOSE 8080
 
-# Start the FastAPI app using uvicorn
+# 9️⃣ Start the FastAPI application with Uvicorn
 CMD ["uvicorn", "ml_date_classifier.infer:app", "--host", "0.0.0.0", "--port", "8080"]
+
+# ---------------------------------------------------------
+# ✅ Notes:
+# - Keeps image lightweight using python:3.10-slim
+# - Uses non-root user for security
+# - Caches dependencies to speed up rebuilds
+# - Exposes port 8080 (matches app + Jenkinsfile)
+# - Fully compatible with AWS ECR + EC2 deployment
+# ---------------------------------------------------------

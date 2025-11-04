@@ -1,13 +1,46 @@
+# ---------------------------------------------------------
+# 🧱 MLProjectV1 - Docker Ignore File (Optimized)
+# ---------------------------------------------------------
+
+# Python cache & compiled files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.egg-info/
+build/
+dist/
+
+# Local databases
 *.db
 *.sqlite3
+
+# Virtual environments
 venv/
 env/
+
+# Environment variables & secrets
 *.env
+.env
+
+# Data folders (large or sensitive)
 data/raw/*
 data/processed/*
+
+# Temporary & model cache files
 models/*.tmp
+.cache/
+.tmp/
+
+# Git & CI/CD
 .git
+.gitignore
+Jenkinsfile
+Dockerfile
+
+# Logs
+*.log
+
+# Optional: skip notebooks & tests
+notebooks/
+tests/
