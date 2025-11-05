@@ -98,17 +98,18 @@ pipeline {
         }
 
         stage('Health Check') {
-            steps {
-                echo '🩺 Checking FastAPI service health...'
-                script {
-                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://${EC2_IP}:${APP_PORT}/health", returnStdout: true).trim()
-                    if (response != '200') {
-                        error("❌ Health check failed! App returned HTTP ${response}")
-                    } else {
-                        echo "✅ Health check passed — FastAPI app is running on port ${APP_PORT}."
-                    }
-                }
-            }
+            echo '🩺 Checking FastAPI service health...'
+            sh '''
+                echo "⏳ Waiting 15 seconds for app to start..."
+                sleep 15
+                STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://13.235.76.77:5000/health)
+                echo "HTTP Status: $STATUS"
+                if [ "$STATUS" -ne 200 ]; then
+                    echo "❌ Health check failed!"
+                    exit 1
+                fi
+                echo "✅ Health check passed successfully!"
+            '''
         }
     }
 
@@ -121,4 +122,5 @@ pipeline {
         }
     }
 }
+
 
