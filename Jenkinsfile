@@ -7,7 +7,7 @@ pipeline {
         ECR_REPO_NAME = 'ml-date-classifier'      // ECR repository name
         IMAGE_TAG = "latest"                      // Docker image tag
         EC2_USER = 'ubuntu'                       // EC2 username (use 'ec2-user' for Amazon Linux)
-        EC2_IP = '13.235.76.77'                     // EC2 public IP
+        EC2_IP = '13.235.76.77'                   // EC2 public IP
         APP_PORT = '5000'                         // EC2 external port for FastAPI app
     }
 
@@ -24,8 +24,8 @@ pipeline {
             steps {
                 echo "📦 Building Docker image..."
                 sh '''
-                set -e
-                docker build -t ${ECR_REPO_NAME}:${IMAGE_TAG} .
+                    set -e
+                    docker build -t ${ECR_REPO_NAME}:${IMAGE_TAG} .
                 '''
             }
         }
@@ -38,16 +38,16 @@ pipeline {
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh '''
-                    set -e
-                    echo "🔐 Configuring AWS credentials..."
-                    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                    aws configure set default.region ${AWS_REGION}
+                        set -e
+                        echo "🔐 Configuring AWS credentials..."
+                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                        aws configure set default.region ${AWS_REGION}
 
-                    echo "🔑 Logging into ECR..."
-                    aws ecr get-login-password --region ${AWS_REGION} | \
-                    docker login --username AWS --password-stdin \
-                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                        echo "🔑 Logging into ECR..."
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                        docker login --username AWS --password-stdin \
+                        ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                     '''
                 }
             }
@@ -57,11 +57,11 @@ pipeline {
             steps {
                 echo "🚀 Tagging and pushing Docker image to ECR..."
                 sh '''
-                set -e
-                docker tag ${ECR_REPO_NAME}:${IMAGE_TAG} \
-                ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
+                    set -e
+                    docker tag ${ECR_REPO_NAME}:${IMAGE_TAG} \
+                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
 
-                docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
+                    docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
                 '''
             }
         }
@@ -70,46 +70,48 @@ pipeline {
             steps {
                 echo "🚀 Deploying Docker container on EC2..."
                 sshagent(['ec2-ssh-key']) {
-                    sh """
-                    set -e
-                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
-                    set -e
-                    echo '🔐 Logging in to AWS ECR on EC2...'
-                    aws ecr get-login-password --region ${AWS_REGION} | \
-                    sudo docker login --username AWS --password-stdin \
-                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                    sh '''
+                        set -e
+                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
+                            set -e
+                            echo '🔐 Logging in to AWS ECR on EC2...'
+                            aws ecr get-login-password --region ${AWS_REGION} | \
+                            sudo docker login --username AWS --password-stdin \
+                            ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-                    echo '📥 Pulling latest Docker image from ECR...'
-                    sudo docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
+                            echo '📥 Pulling latest Docker image from ECR...'
+                            sudo docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
 
-                    echo '🧹 Cleaning up old container (if any)...'
-                    sudo docker stop ml_app || true
-                    sudo docker rm ml_app || true
+                            echo '🧹 Cleaning up old container (if any)...'
+                            sudo docker stop ml_app || true
+                            sudo docker rm ml_app || true
 
-                    echo '🚀 Starting new container on port ${APP_PORT}...'
-                    sudo docker run -d -p ${APP_PORT}:8080 --name ml_app \
-                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
+                            echo '🚀 Starting new container on port ${APP_PORT}...'
+                            sudo docker run -d -p ${APP_PORT}:8080 --name ml_app \
+                            ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}
 
-                    echo '✅ Deployment successful on EC2!'
-                    "
-                    """
+                            echo '✅ Deployment successful on EC2!'
+                        "
+                    '''
                 }
             }
         }
 
         stage('Health Check') {
-            echo '🩺 Checking FastAPI service health...'
-            sh '''
-                echo "⏳ Waiting 15 seconds for app to start..."
-                sleep 15
-                STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://13.235.76.77:5000/health)
-                echo "HTTP Status: $STATUS"
-                if [ "$STATUS" -ne 200 ]; then
-                    echo "❌ Health check failed!"
-                    exit 1
-                fi
-                echo "✅ Health check passed successfully!"
-            '''
+            steps {
+                echo '🩺 Checking FastAPI service health...'
+                sh '''
+                    echo "⏳ Waiting 15 seconds for app to start..."
+                    sleep 15
+                    STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${EC2_IP}:${APP_PORT}/health)
+                    echo "🔍 HTTP Status: $STATUS"
+                    if [ "$STATUS" -ne 200 ]; then
+                        echo "❌ Health check failed!"
+                        exit 1
+                    fi
+                    echo "✅ Health check passed successfully!"
+                '''
+            }
         }
     }
 
@@ -122,5 +124,3 @@ pipeline {
         }
     }
 }
-
-
