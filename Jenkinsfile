@@ -7,7 +7,7 @@ pipeline {
         ECR_REPO_NAME = 'ml-date-classifier'      // ECR repository name
         IMAGE_TAG = "latest"                      // Docker image tag
         EC2_USER = 'ubuntu'                       // EC2 username (use 'ec2-user' for Amazon Linux)
-        EC2_IP = '13.235.76.77'                   // EC2 public IP
+        EC2_IP = '13.201.192.104'                   // EC2 public IP
         APP_PORT = '5000'                         // EC2 external port for FastAPI app
     }
 
@@ -124,3 +124,4 @@ pipeline {
         }
     }
 }
+
